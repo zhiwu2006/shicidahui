@@ -79,7 +79,16 @@
         }
         .navigation {
             margin-top: 20px;
-            text-align: center;
+        }
+        .nav-controls {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 20px;
+        }
+        .jump-container {
+            margin-left: auto;
+            margin-right: 20px;
         }
         .btn {
             padding: 10px 20px;
@@ -120,16 +129,44 @@
             font-size: 0.9em;
         }
         .score {
-            margin-top: 10px;
             text-align: center;
             color: #2196f3;
-            font-size: 1.1em;
+            font-size: 1.2em;
             font-weight: bold;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+        }
+        .jump-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .jump-input {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .jump-btn {
+            background-color: #9c27b0;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .jump-btn:hover {
+            background-color: #7b1fa2;
         }
             </style>
         </head>
         <body>
             <div class="container">
+                <div class="score">得分：0分/0题</div>
                 <div class="question-container">
                     <div class="question-type"></div>
                     <div class="question"></div>
@@ -137,12 +174,17 @@
                     <div class="result"></div>
                     <div class="explanation"></div>
                     <div class="navigation">
-                        <button class="btn prev-btn" style="display: none;">上一题</button>
-                        <button class="btn submit-btn">提交答案</button>
-                        <button class="btn next-btn">下一题</button>
+                        <div class="nav-controls">
+                            <button class="btn prev-btn" style="display: none;">上一题</button>
+                            <div class="jump-container">
+                                <input type="number" class="jump-input" placeholder="题号" min="1">
+                                <button class="jump-btn">跳转</button>
+                            </div>
+                            <button class="btn submit-btn">提交答案</button>
+                            <button class="btn next-btn">下一题</button>
+                        </div>
                     </div>
                     <div class="progress"></div>
-                    <div class="score">得分：0分/0题</div>
                 </div>
             </div>
         
@@ -181,8 +223,12 @@
                             option.textContent = `${key}. ${question.options[key]}`;
                             option.setAttribute('data-value', key);
                             option.onclick = function() {
-                                document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-                                this.classList.add('selected');
+                                if (question.question_type === '选词填空') {
+                                    this.classList.toggle('selected');
+                                } else {
+                                    document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                                    this.classList.add('selected');
+                                }
                             };
                             optionsContainer.appendChild(option);
                         }
@@ -199,11 +245,19 @@
                             optionsContainer.appendChild(option);
                         });
                     } else if (question.question_type === '选词填空') {
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.className = 'option';
-                        input.style.padding = '10px';
-                        optionsContainer.appendChild(input);
+                        const optionsDiv = document.createElement('div');
+                        optionsDiv.className = 'options-container';
+                        for (let key in question.options) {
+                            const option = document.createElement('div');
+                            option.className = 'option';
+                            option.textContent = `${key}. ${question.options[key]}`;
+                            option.setAttribute('data-value', key);
+                            option.onclick = function() {
+                                this.classList.toggle('selected');
+                            };
+                            optionsDiv.appendChild(option);
+                        }
+                        optionsContainer.appendChild(optionsDiv);
                     }
     
                     // 重置结果和解释区域
@@ -222,14 +276,18 @@
                     let userAnswer = '';
                     
                     if (question.question_type === '选词填空') {
-                        userAnswer = document.querySelector('input').value.trim();
+                        const selectedOptions = document.querySelectorAll('.option.selected');
+                        if (selectedOptions.length > 0) {
+                            userAnswer = Array.from(selectedOptions)
+                                .map(option => option.getAttribute('data-value'))
+                                .sort()
+                                .join('、');
+                        }
                     } else {
                         const selectedOption = document.querySelector('.option.selected');
-                        if (!selectedOption) {
-                            alert('请选择一个答案！');
-                            return;
+                        if (selectedOption) {
+                            userAnswer = selectedOption.getAttribute('data-value');
                         }
-                        userAnswer = selectedOption.getAttribute('data-value');
                     }
     
                     const resultDiv = document.querySelector('.result');
@@ -264,6 +322,24 @@
                         updateScore();
                         showQuestion(currentQuestionIndex);
                     }
+                };
+                document.querySelector('.prev-btn').onclick = function() {
+                    currentQuestionIndex--;
+                    showQuestion(currentQuestionIndex);
+                };
+
+                document.querySelector('.jump-btn').onclick = function() {
+                    const input = document.querySelector('.jump-input');
+                    const jumpTo = parseInt(input.value);
+                    
+                    if (isNaN(jumpTo) || jumpTo < 1 || jumpTo > questions.length) {
+                        alert(`请输入1到${questions.length}之间的题号！`);
+                        return;
+                    }
+                    
+                    currentQuestionIndex = jumpTo - 1;
+                    showQuestion(currentQuestionIndex);
+                    input.value = '';
                 };
             </script>
         </body>
