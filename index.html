@@ -119,6 +119,13 @@
             color: #666;
             font-size: 0.9em;
         }
+        .score {
+            margin-top: 10px;
+            text-align: center;
+            color: #2196f3;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
             </style>
         </head>
         <body>
@@ -135,12 +142,15 @@
                         <button class="btn next-btn">下一题</button>
                     </div>
                     <div class="progress"></div>
+                    <div class="score">得分：0分/0题</div>
                 </div>
             </div>
         
             <script>
                 let questions = [];
                 let currentQuestionIndex = 0;
+                let correctCount = 0;
+                let answeredCount = 0;
     
                 // 加载题目数据
                 fetch('test150.json')
@@ -203,6 +213,10 @@
                     document.querySelector('.submit-btn').style.display = 'block';
                 }
     
+                function updateScore() {
+                    document.querySelector('.score').textContent = `得分：${correctCount}分/${answeredCount}题`;
+                }
+    
                 document.querySelector('.submit-btn').onclick = function() {
                     const question = questions[currentQuestionIndex];
                     let userAnswer = '';
@@ -222,6 +236,12 @@
                     const explanationDiv = document.querySelector('.explanation');
                     const isCorrect = userAnswer === question.correct_answer;
     
+                    if (isCorrect) {
+                        correctCount++;
+                    }
+                    answeredCount++;
+                    updateScore();
+    
                     resultDiv.textContent = isCorrect ? '回答正确！' : `回答错误，正确答案是：${question.correct_answer}`;
                     resultDiv.className = 'result ' + (isCorrect ? 'correct' : 'incorrect');
                     explanationDiv.textContent = question.detailed_explanation;
@@ -239,6 +259,9 @@
                     } else {
                         alert('恭喜你完成所有题目！');
                         currentQuestionIndex = 0;
+                        correctCount = 0;
+                        answeredCount = 0;
+                        updateScore();
                         showQuestion(currentQuestionIndex);
                     }
                 };
