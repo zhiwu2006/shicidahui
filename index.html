@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>诗词测试</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 90%;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .question-container {
+            margin-bottom: 20px;
+        }
+        .question-type {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .option {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .option:hover {
+            background-color: #f0f0f0;
+        }
+        .selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .correct {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .incorrect {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .explanation {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3e0;
+            border-radius: 5px;
+            display: none;
+        }
+        .navigation {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        .submit-btn {
+            background-color: #2196f3;
+            color: white;
+            margin-right: 10px;
+        }
+        .submit-btn:hover {
+            background-color: #1976d2;
+        }
+        .next-btn {
+            background-color: #4caf50;
+            color: white;
+            display: none;
+        }
+        .next-btn:hover {
+            background-color: #388e3c;
+        }
+        .prev-btn {
+            background-color: #ff9800;
+            color: white;
+            margin-right: 10px;
+        }
+        .prev-btn:hover {
+            background-color: #f57c00;
+        }
+        .progress {
+            margin-top: 15px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="question-container">
+                    <div class="question-type"></div>
+                    <div class="question"></div>
+                    <div class="options"></div>
+                    <div class="result"></div>
+                    <div class="explanation"></div>
+                    <div class="navigation">
+                        <button class="btn prev-btn" style="display: none;">上一题</button>
+                        <button class="btn submit-btn">提交答案</button>
+                        <button class="btn next-btn">下一题</button>
+                    </div>
+                    <div class="progress"></div>
+                </div>
+            </div>
+        
+            <script>
+                let questions = [];
+                let currentQuestionIndex = 0;
+    
+                // 加载题目数据
+                fetch('test150.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        questions = data[0].questions;
+                        showQuestion(currentQuestionIndex);
+                    });
+    
+                function updateProgress() {
+                    document.querySelector('.progress').textContent = `第 ${currentQuestionIndex + 1} 题 / 共 ${questions.length} 题`;
+                    document.querySelector('.prev-btn').style.display = currentQuestionIndex > 0 ? 'inline-block' : 'none';
+                }
+    
+                function showQuestion(index) {
+                    const question = questions[index];
+                    document.querySelector('.question-type').textContent = question.question_type;
+                    document.querySelector('.question').textContent = question.question;
+                    updateProgress();
+    
+                    const optionsContainer = document.querySelector('.options');
+                    optionsContainer.innerHTML = '';
+    
+                    if (Object.keys(question.options).length > 0) {
+                        for (let key in question.options) {
+                            const option = document.createElement('div');
+                            option.className = 'option';
+                            option.textContent = `${key}. ${question.options[key]}`;
+                            option.setAttribute('data-value', key);
+                            option.onclick = function() {
+                                document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                                this.classList.add('selected');
+                            };
+                            optionsContainer.appendChild(option);
+                        }
+                    } else if (question.question_type === '判断题') {
+                        ['√', '×'].forEach(value => {
+                            const option = document.createElement('div');
+                            option.className = 'option';
+                            option.textContent = value;
+                            option.setAttribute('data-value', value);
+                            option.onclick = function() {
+                                document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                                this.classList.add('selected');
+                            };
+                            optionsContainer.appendChild(option);
+                        });
+                    } else if (question.question_type === '选词填空') {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'option';
+                        input.style.padding = '10px';
+                        optionsContainer.appendChild(input);
+                    }
+    
+                    // 重置结果和解释区域
+                    document.querySelector('.result').style.display = 'none';
+                    document.querySelector('.explanation').style.display = 'none';
+                    document.querySelector('.next-btn').style.display = 'none';
+                    document.querySelector('.submit-btn').style.display = 'block';
+                }
+    
+                document.querySelector('.submit-btn').onclick = function() {
+                    const question = questions[currentQuestionIndex];
+                    let userAnswer = '';
+                    
+                    if (question.question_type === '选词填空') {
+                        userAnswer = document.querySelector('input').value.trim();
+                    } else {
+                        const selectedOption = document.querySelector('.option.selected');
+                        if (!selectedOption) {
+                            alert('请选择一个答案！');
+                            return;
+                        }
+                        userAnswer = selectedOption.getAttribute('data-value');
+                    }
+    
+                    const resultDiv = document.querySelector('.result');
+                    const explanationDiv = document.querySelector('.explanation');
+                    const isCorrect = userAnswer === question.correct_answer;
+    
+                    resultDiv.textContent = isCorrect ? '回答正确！' : `回答错误，正确答案是：${question.correct_answer}`;
+                    resultDiv.className = 'result ' + (isCorrect ? 'correct' : 'incorrect');
+                    explanationDiv.textContent = question.detailed_explanation;
+    
+                    resultDiv.style.display = 'block';
+                    explanationDiv.style.display = 'block';
+                    this.style.display = 'none';
+                    document.querySelector('.next-btn').style.display = 'block';
+                };
+    
+                document.querySelector('.next-btn').onclick = function() {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < questions.length) {
+                        showQuestion(currentQuestionIndex);
+                    } else {
+                        alert('恭喜你完成所有题目！');
+                        currentQuestionIndex = 0;
+                        showQuestion(currentQuestionIndex);
+                    }
+                };
+            </script>
+        </body>
+        </html>
